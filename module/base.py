@@ -8,6 +8,15 @@
 import tensorflow as tf
 import numpy as np
 
+__all__ = [
+    'feed_forward',
+    'residual_connection',
+    'position_encoding',
+    'gelu',
+    'label_smoothing',
+    'noam_scheme',
+]
+
 
 def feed_forward(inputs, units: list, dropout, training: bool):
     inner = tf.layers.dense(inputs, units[0])

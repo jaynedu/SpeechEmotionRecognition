@@ -6,7 +6,6 @@
 #
 
 import os
-import sys
 import random
 import librosa
 import numpy as np
@@ -14,8 +13,7 @@ import python_speech_features
 import tqdm
 from pyAudioAnalysis import ShortTermFeatures
 from sklearn.model_selection import train_test_split
-from . import utils
-from vad import Vad
+import utils
 
 
 class AudioFeatureExtraction:
@@ -23,16 +21,17 @@ class AudioFeatureExtraction:
         self.frame_length = 400
         self.frame_step = 160
 
-    def read_audio(self, input, use_vad=True):
+    @staticmethod
+    def read_audio(input, use_vad=True):
         output = input
         if use_vad:
             output = os.path.join(r'E:\temp', os.path.basename(input))
-            Vad().get_audio_with_vad(input, output)
+            utils.Vad().get_audio_with_vad(input, output)
 
         y, sr = librosa.load(output, sr=16000)
 
         if use_vad:
-            utils.clear(output)  # 清除临时文件
+            utils.base.clear(output)  # 清除临时文件
 
         signal = python_speech_features.sigproc.preemphasis(y, 0.97)
         return signal, sr
@@ -88,7 +87,8 @@ class AudioFeatureExtraction:
                 print(error)
         return paths, labels, features
 
-    def split(self, xs, ys: list):
+    @staticmethod
+    def split(xs, ys: list):
         count = {}
         for i in set(ys):
             count[i] = ys.count(i)
@@ -109,7 +109,8 @@ class AudioFeatureExtraction:
         x_test, x_val, y_test, y_val = train_test_split(x_test, y_test, test_size=0.5, stratify=y_test)
         return (x_train, y_train), (x_test, y_test), (x_val, y_val)
 
-    def tfrecord_genrator(self, splits, path):
+    @staticmethod
+    def tfrecord_genrator(splits, path):
         '''
         :param splits: [[feature, label], [feature, label], [feature, label], ...]
         :param path: save_path
@@ -118,7 +119,7 @@ class AudioFeatureExtraction:
         suffix = ['.train', '.test', '.val']
         for i, split in enumerate(splits):
             x, y = split
-            writer = utils.createWriter(path + '_' + str(len(x)) + suffix[i])
+            writer = utils.tfrecord.createWriter(path + '_' + str(len(x)) + suffix[i])
             for feature, label in zip(x, y):
-                utils.saveTFrecord(feature, label, writer)
-            utils.disposeWriter(writer)
+                utils.tfrecord.saveTFrecord(feature, label, writer)
+            utils.tfrecord.disposeWriter(writer)

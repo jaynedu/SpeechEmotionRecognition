@@ -1,38 +1,19 @@
 # -*- coding: utf-8 -*-
-# @Date    : 2020/8/31 9:16 下午
+# @Date    : 2020/9/1 9:55 下午
 # @Author  : Du Jing
-# @FileName: utils
+# @FileName: tfrecord
 # ---- Description ----
 #
 
-import os
 import sys
 import tensorflow as tf
 
 __all__ = [
-    'check_dir',
-    'clear',
+    'createWriter',
+    'disposeWriter',
     'saveTFrecord',
     'readTFrecord',
-    'createWriter',
-    'disposeWriter'
 ]
-
-def clear(*args):
-    for arg in args:
-        try:
-            os.remove(arg)
-        except FileNotFoundError:
-            print("文件 [%s] 不存在!" % arg)
-
-
-def check_dir(dir):
-    if not os.path.exists(dir):
-        parent = os.path.split(dir)[0]
-        check_dir(parent)
-        os.mkdir(dir)
-
-
 def bytes_feature(value):
     """生成字符串型的属性"""
     return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))

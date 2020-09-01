@@ -3,4 +3,9 @@
 # @Author  : Du Jing
 # @FileName: __init__.py
 # ---- Description ----
-# 
+#
+
+from module import base
+from module import attention
+from module import cells
+from module import utils

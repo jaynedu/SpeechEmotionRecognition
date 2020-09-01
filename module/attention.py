@@ -14,27 +14,36 @@
 
 import tensorflow as tf
 
+__all__ = [
+    'scaled_dot_product_attention',
+    'linear_attention_kernel',
+    'linear_attention_multiple_softmax',
+    'linear_attention_taylor',
+    'multi_head_attention',
+    'time_attention',
+    'feature_attention',
+]
 
 def scaled_dot_product_attention(Q, K, V, dropout, training, scope="scaled_dot_product_attention"):
     with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
         d_k = Q.get_shape().as_list()[-1]
         outputs = tf.matmul(Q, K, transpose_b=True)  # dot product
         outputs /= (d_k ** 0.5)  # scale
-
         outputs = tf.nn.softmax(outputs)  # softmax
-
         # draw
         score = tf.transpose(outputs, [0, 2, 1])
         tf.summary.image("attention score", tf.expand_dims(score[:1], -1))
 
         if training is not None and training is True:
             outputs = tf.layers.dropout(outputs, rate=dropout, training=training)
-
         outputs = tf.matmul(outputs, V)  # weighted sum (batch_size, seqlen, d_v)
         return outputs
 
 
 def scaled_dot_product_attention_handmade(Q, K, V, dropout, training, scope="scaled_dot_product_attention"):
+    '''
+    手写实现缩放点积注意力，不用tf里的softmax
+    '''
     with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
         d_k = Q.get_shape().as_list()[-1]
         outputs = tf.matmul(Q, K, transpose_b=True)  # dot product
@@ -55,12 +64,10 @@ def scaled_dot_product_attention_handmade(Q, K, V, dropout, training, scope="sca
         return outputs
 
 
-def linear_attention_tayler(Q, K, V, dropout, training, scope="tayler_dot_product_attention"):
+def linear_attention_taylor(Q, K, V, dropout, training, scope="linear_attention_tayler"):
     eps = 1e-7
     with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
         n_k, d_k = Q.get_shape().as_list()[1:]
-        # _Q = tf.tanh(Q)
-        # _K = tf.tanh(K)
         _Q = tf.nn.l2_normalize(Q)
         _K = tf.nn.l2_normalize(K)
 
@@ -74,6 +81,11 @@ def linear_attention_tayler(Q, K, V, dropout, training, scope="tayler_dot_produc
 
 
 def linear_attention_kernel(Q, K, V, dropout, training, scope="linear_attention_kernel"):
+    '''
+    Transformers are RNNs: Fast Autoregressive Transformers with Linear Attention
+    https://arxiv.org/abs/2006.16236
+    通过核函数定义内积
+    '''
     with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
         _Q = tf.nn.elu(Q) + 1
         _K = tf.nn.elu(K) + 1
@@ -86,12 +98,24 @@ def linear_attention_kernel(Q, K, V, dropout, training, scope="linear_attention_
 
 
 def linear_attention_multiple_softmax(Q, K, V, dropout, training, scope="linear_attention_multiple_softmax"):
+    '''
+    Efficient Attention: Attention with Linear Complexities
+    https://arxiv.org/abs/1812.01243
+    分别对Q、K进行softmax，可视为对不同维的特征加权且效果等价
+    '''
     with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
-        _Q = tf.exp(Q)
-        _K = tf.exp(K)
-        Q_ = _Q / tf.reduce_sum(_Q, axis=2, keepdims=True)
-        K_ = _K / tf.reduce_sum(_K, axis=1, keepdims=True)
-        outputs = tf.matmul(Q_, tf.matmul(K_, V, transpose_a=True))
+        '''手写实现'''
+        # _Q = tf.exp(Q)
+        # _K = tf.exp(K)
+        # Q_ = _Q / tf.reduce_sum(_Q, axis=2, keepdims=True)
+        # K_ = _K / tf.reduce_sum(_K, axis=1, keepdims=True)
+        # outputs = tf.matmul(Q_, tf.matmul(K_, V, transpose_a=True))
+
+        '''函数实现'''
+        _Q = tf.nn.softmax(Q)
+        _K = tf.nn.softmax(K)
+        outputs = tf.matmul(tf.matmul(_Q, _K, transpose_b=True), V)
+
         if training is not None and training is True:
             outputs = tf.layers.dropout(outputs, rate=dropout, training=training)
 
@@ -105,7 +129,7 @@ def multi_head_attention(keys, queries, values, head_num, head_size, dropout, tr
     keys: A 3d tensor with shape of [N, T_k, d_model].
     values: A 3d tensor with shape of [N, T_k, d_model].
     '''
-    assert type in ["softmax", "tayler", "kernel", "multi_softmax"], print("check the attention unit type!")
+    assert type in ["softmax", "taylor", "kernel", "multi_softmax"], print("check the attention unit type!")
     hidden_size = head_num * head_size  # d_model = hidden_size
     with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
         Q = tf.layers.dense(queries, hidden_size, use_bias=True)
@@ -118,9 +142,9 @@ def multi_head_attention(keys, queries, values, head_num, head_size, dropout, tr
         _V = tf.concat(tf.split(V, head_num, axis=2), axis=0)  # (h*N, T_k, d_model/h)
 
         if type == "softmax":
-            score = scaled_dot_product_attention_handmade(_Q, _K, _V, dropout=dropout, training=training)
-        if type == "tayler":
-            score = linear_attention_tayler(_Q, _K, _V, dropout=dropout, training=training)
+            score = scaled_dot_product_attention(_Q, _K, _V, dropout=dropout, training=training)
+        if type == "taylor":
+            score = linear_attention_taylor(_Q, _K, _V, dropout=dropout, training=training)
         if type == "kernel":
             score = linear_attention_kernel(_Q, _K, _V, dropout, training)
         if type == "multi_softmax":
