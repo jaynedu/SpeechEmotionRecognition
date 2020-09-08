@@ -6,6 +6,7 @@
 #
 
 from utils import base
+from utils import audio
 from utils import draw
 from utils import tfrecord
 from utils.vad import Vad

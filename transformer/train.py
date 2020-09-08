@@ -6,8 +6,10 @@
 #
 
 import os
+import time
 import tensorflow as tf
 from tqdm import tqdm
+from sklearn.metrics import confusion_matrix, classification_report
 import utils
 from transformer import args
 from transformer.graph import model
@@ -24,13 +26,13 @@ print("[训练集]: %s\n[验证集]: %s\n[模型保存路径]: %s\n" % (args.tra
 
 with tf.get_default_graph().as_default() as graph:
     # 加载数据
-    train_iterator = utils.tfrecord.readTFrecord(args.train_path, model.feature_dimension, model.sequence_length, args.epoch,
-                                       args.train_batch,
-                                       True)
+    train_iterator = utils.tfrecord.read_tfrecord(args.train_path, model.feature_dimension, model.sequence_length, args.epoch,
+                                                  args.train_batch,
+                                                  True)
     train_x, train_y, train_ndim, train_nframe = train_iterator.get_next()
 
-    val_iterator = utils.tfrecord.readTFrecord(args.val_path, model.feature_dimension, model.sequence_length, -1, args.val_batch,
-                                     False)
+    val_iterator = utils.tfrecord.read_tfrecord(args.val_path, model.feature_dimension, model.sequence_length, -1, args.val_batch,
+                                                False)
     val_x, val_y, val_ndim, val_nframe = val_iterator.get_next()
 
     with tf.compat.v1.Session(config=config) as sess:
@@ -66,23 +68,23 @@ with tf.get_default_graph().as_default() as graph:
                     tbar.set_postfix_str("lr: %.10f, acc: %s, loss: %s" % (lrate, train_acc, train_loss))
 
                 # <editor-fold desc="Validate">
-                # if global_step % 10 == 0 and global_step != 0:
-                #     tqdm.write("\n============================== val ==============================")
-                #     valData, valLabel, valx, valy = sess.run([val_x, val_y, val_nframe, val_ndim])
-                #     feed_dict_val = {model.x_input: valData,
-                #                      model.y_true: valLabel,
-                #                      model.seqLen: valx,
-                #                      model.dropout: 0,
-                #                      model.training: False}
-                #     y_pred_val, val_acc, val_loss, val_summary = sess.run(
-                #         [model.y_pred, model.accuracy, model.loss, model.merged_summary_op],
-                #         feed_dict=feed_dict_val)
-                #     val_summary_writer.add_summary(val_summary, global_step=global_step)
-                #     print("\n", time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())),
-                #           "[Validation] [step]: %d    [loss]: %s    [acc]: %s    " % (
-                #               global_step, val_loss, val_acc))
-                #     print(classification_report(y_true=valLabel, y_pred=y_pred_val))
-                #     print(confusion_matrix(y_true=valLabel, y_pred=y_pred_val))
+                if global_step % 20 == 0 and global_step != 0:
+                    tqdm.write("\n============================== val ==============================")
+                    valData, valLabel, valx, valy = sess.run([val_x, val_y, val_nframe, val_ndim])
+                    feed_dict_val = {model.x_input: valData,
+                                     model.y_true: valLabel,
+                                     model.seqLen: valx,
+                                     model.dropout: 0,
+                                     model.training: False}
+                    y_pred_val, val_acc, val_loss, val_summary = sess.run(
+                        [model.y_pred, model.accuracy, model.loss, model.merged_summary_op],
+                        feed_dict=feed_dict_val)
+                    val_summary_writer.add_summary(val_summary, global_step=global_step)
+                    print("\n", time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())),
+                          "[Validation] [step]: %d    [loss]: %s    [acc]: %s    " % (
+                              global_step, val_loss, val_acc))
+                    print(classification_report(y_true=valLabel, y_pred=y_pred_val))
+                    print(confusion_matrix(y_true=valLabel, y_pred=y_pred_val))
                 # </editor-fold>
 
 

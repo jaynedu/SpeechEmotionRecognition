@@ -24,7 +24,7 @@ model_name = os.path.split(os.path.dirname(__file__))[-1]  # 当前模型文件�
 position_encoding_type = "concat"
 attention_unit_type = "softmax"
 feature_name = "logfbank"
-dataset_name = "emodb_768"
+dataset_name = "iemocap_512"
 
 model_version = '_'.join([model_name, position_encoding_type, attention_unit_type, feature_name, dataset_name])
 model_save_dir = os.path.join(r'E:\Models', model_name, model_version)
@@ -32,25 +32,25 @@ model_save_dir = os.path.join(r'E:\Models', model_name, model_version)
 # 路径设置
 train_tensorboard_path = os.path.join('logs', datetime + '_' + model_version, 'train')
 val_tensorboard_path = os.path.join('logs', datetime + '_' + model_version, 'val')
-train_path = r'E:\Datasets\emodb_768_201.train'
-val_path = r'E:\Datasets\emodb_600_26.val'
-test_path = r'E:\Datasets\emodb_256_31.test'
+train_path = r'E:\Datasets\iemocap_512_3155.train'
+val_path = r'E:\Datasets\iemocap_512_395.val'
+test_path = r'E:\Datasets\iemocap_512_394.test'
 
 # 训练参数设置
 train_size = eval(os.path.splitext(train_path)[0].split('_')[-1])
 val_size = eval(os.path.splitext(val_path)[0].split('_')[-1])
 test_size = eval(os.path.splitext(test_path)[0].split('_')[-1])
 validate = False
-train_batch = 4
-val_batch = val_size
-epoch = 32
+train_batch = 16
+val_batch = 100
+epoch = 100
 eta = 0.001
-warmup = 1000.
+warmup = 2000.
 
 # 模型参数设置
 nlabel = 4
 nfeature = 64
-seq_length = 768
+seq_length = 512
 position_size = 64
 head_num = 8
 head_size = int(128 / head_num) if position_encoding_type == 'concat' else int(64 / head_num)
@@ -58,8 +58,8 @@ feed_forward_size = [512, 128] if position_encoding_type == 'concat' else [256, 
 dropout = 0.1
 
 # 测试参数控制
-classes = ['anger', 'happy', 'neutral', 'sad']  # urdu / casia / des
-# classes = ['anger', 'sad', 'happy', 'neutral']  # iemocap
+# classes = ['anger', 'happy', 'neutral', 'sad']  # urdu / casia / des
+classes = ['anger', 'sad', 'happy', 'neutral']  # iemocap
 # classes = ['anger', 'happy', 'sad', 'neutral']  # emodb
 # classes = ["agressiv", "neutral", "cheerful", "tired"]  # abc
 plot_matrix = True

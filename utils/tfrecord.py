@@ -9,11 +9,14 @@ import sys
 import tensorflow as tf
 
 __all__ = [
-    'createWriter',
-    'disposeWriter',
-    'saveTFrecord',
-    'readTFrecord',
+    'create_writer',
+    'dispose_writer',
+    'save_tfrecord',
+    'read_tfrecord',
+    'generate_tfrecord'
 ]
+
+
 def bytes_feature(value):
     """生成字符串型的属性"""
     return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
@@ -29,15 +32,15 @@ def float_feature(value):
     return tf.train.Feature(float_list=tf.train.FloatList(value=[value]))
 
 
-def createWriter(path):
+def create_writer(path):
     return tf.io.TFRecordWriter(path)
 
 
-def disposeWriter(writer: tf.io.TFRecordWriter):
+def dispose_writer(writer: tf.io.TFRecordWriter):
     writer.close()
 
 
-def saveTFrecord(feature, label, writer):
+def save_tfrecord(feature, label, writer):
     nframe, ndim = feature.shape
     context_dict = {
         'label': int64_feature(label),
@@ -55,7 +58,7 @@ def saveTFrecord(feature, label, writer):
     writer.write(tf_serial)
 
 
-def _parseTFrecord(example_series):
+def parse_tfrecord(example_series):
     context_features, sequence_features = tf.io.parse_single_sequence_example(
         serialized=example_series,
         context_features={
@@ -75,7 +78,7 @@ def _parseTFrecord(example_series):
     return feature, label, ndim, nframe
 
 
-def readTFrecord(file, nfeature, seq_length=None, epoch=None, batch_size=None, isTrain=True):
+def read_tfrecord(file, nfeature, seq_length=None, epoch=None, batch_size=None, isTrain=True):
     if not isTrain and epoch > 1:
         sys.stderr.write('Testing Mode! (epoch should be -1)')
         sys.exit(1)
@@ -83,8 +86,23 @@ def readTFrecord(file, nfeature, seq_length=None, epoch=None, batch_size=None, i
         example_series = tf.data.TFRecordDataset(file)
     else:
         example_series = tf.data.TFRecordDataset([file])
-    epoch_series = example_series.map(_parseTFrecord).repeat(epoch)
+    epoch_series = example_series.map(parse_tfrecord).repeat(epoch)
     epoch_series = epoch_series.shuffle(batch_size * 5)
     padded_batch_series = epoch_series.padded_batch(batch_size, ([seq_length, nfeature], [], [], []))
     iterator = tf.compat.v1.data.make_initializable_iterator(padded_batch_series)
     return iterator
+
+
+def generate_tfrecord(splits, path):
+    '''
+    :param splits: [[feature, label], [feature, label], [feature, label], ...]
+    :param path: save_path
+    :return:
+    '''
+    suffix = ['.train', '.test', '.val']
+    for i, split in enumerate(splits):
+        x, y = split
+        writer = create_writer(path + '_' + str(len(x)) + suffix[i])
+        for feature, label in zip(x, y):
+            save_tfrecord(feature, label, writer)
+        dispose_writer(writer)

@@ -12,12 +12,11 @@ import tensorflow as tf
 from sklearn.metrics import confusion_matrix, classification_report
 
 import utils
-from preprocess import Data
 from transformer import args
 from transformer.graph import model
 
 # 加载数据集
-test_data_path = Data.generate_testset(args.test_path, args.nfeature, args.seq_length, args.test_size)
+test_data_path = utils.audio.AudioUtils.generate_testset(args.test_path, args.nfeature, args.seq_length, args.test_size)
 test_data = np.load(test_data_path)
 testData, testLabel, testx, testy = test_data['inputs'], test_data['labels'], test_data['seqlen'], test_data['dim'],
 feed_dict_test = {model.x_input: testData,
