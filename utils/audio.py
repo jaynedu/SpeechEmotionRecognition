@@ -19,6 +19,8 @@ import python_speech_features
 import tqdm
 from pyAudioAnalysis import ShortTermFeatures
 from sklearn.model_selection import train_test_split
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
 import utils
 
 
@@ -159,7 +161,7 @@ class AudioUtils:
         return (x_train, y_train), (x_test, y_test), (x_val, y_val)
 
     @staticmethod
-    def generate_testset(self, tfrecordPath, nFeature, seqLength, totalSize):
+    def generate_testset(tfrecordPath, nFeature, seqLength, totalSize):
         test_iterator = utils.tfrecord.read_tfrecord(tfrecordPath, nFeature, seqLength, 1, totalSize, False)
         x, y, ndim, nframe = test_iterator.get_next()
         with tf.Session() as sess:
@@ -171,9 +173,34 @@ class AudioUtils:
 
         return save_path
 
+    @staticmethod
+    def scaler_dataset(train, test, val, type='standard'):
+        if type == "standard":
+            scaler = StandardScaler()
+        elif type == "minmax":
+            scaler = MinMaxScaler()
+        else:
+            print("Current Type: [%s]. Available Type: [standard], [minmax]" % type)
+            input_type = input()
+            AudioUtils.scaler_dataset(train, test, val, input_type)
+
+        train_std = scaler.fit_transform(train)
+        test_std = scaler.transform(test)
+        val_std = scaler.transform(val)
+        return train_std, test_std, val_std
+
+    @staticmethod
+    def pca_dataset(train, test, val, n_components):
+        pca = PCA(n_components)
+        train_pca = pca.fit_transform(train)
+        test_pca = pca.transform(test)
+        val_pca = pca.transform(val)
+        return train_pca, test_pca, val_pca
+
 
 class OpenSMILE:
     default_feature_file_save_path = os.getcwd()  # 默认特征集文件保存路径
+
     def __init__(self, input_file):
         self.openSmile_exe = 'D:\\openSMILE\\opensmile-2.3.0\\bin\\Win32\\SMILExtract_Release.exe'
         self.input_file = input_file

@@ -41,12 +41,9 @@ def dispose_writer(writer: tf.io.TFRecordWriter):
 
 
 def save_tfrecord(feature, label, writer):
-    nframe, ndim = feature.shape
-    context_dict = {
-        'label': int64_feature(label),
-        'ndim': int64_feature(ndim),
-        'nframe': int64_feature(nframe),
-    }
+    context_dict = {'label': int64_feature(label)}
+    for i, shape in enumerate(list(feature.shape)):
+        context_dict['shape_%d' % i] = int64_feature(shape)
     feature_list = {
         'feature': tf.train.FeatureList(feature=[bytes_feature(f.tobytes()) for f in feature])
     }
@@ -63,19 +60,19 @@ def parse_tfrecord(example_series):
         serialized=example_series,
         context_features={
             "label": tf.io.FixedLenFeature([], tf.int64),
-            "ndim": tf.io.FixedLenFeature([], tf.int64),
-            "nframe": tf.io.FixedLenFeature([], tf.int64),
+            # "ndim": tf.io.FixedLenFeature([], tf.int64),
+            # "nframe": tf.io.FixedLenFeature([], tf.int64),
         },
         sequence_features={
             'feature': tf.io.FixedLenSequenceFeature([], tf.string)
         }
     )
     label = tf.cast(context_features["label"], tf.int32)
-    ndim = tf.cast(context_features["ndim"], tf.int32, 'ndim')
-    nframe = tf.cast(context_features["nframe"], tf.int32, 'nframe')
+    # ndim = tf.cast(context_features["ndim"], tf.int32, 'ndim')
+    # nframe = tf.cast(context_features["nframe"], tf.int32, 'nframe')
     feature = tf.decode_raw(sequence_features['feature'], out_type=tf.float64)
     feature = tf.cast(feature, tf.float32)
-    return feature, label, ndim, nframe
+    return feature, label
 
 
 def read_tfrecord(file, nfeature, seq_length=None, epoch=None, batch_size=None, isTrain=True):
