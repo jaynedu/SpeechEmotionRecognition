@@ -7,24 +7,20 @@
 import os
 import numpy as np
 import utils
+from fixedChunksModel import args
 
 np.set_printoptions(threshold=np.inf)
 
-# 读取数据库文件信息
-jsonPath = r'E:\Datasets\emodb.json'  # 原始数据库json文件
-savePath = r'E:\Datasets\emodb'
-utils.base.check_dir(savePath)
-selectedLabels = [0, 1, 2, 3]
-dataset = utils.audio.Data(jsonPath, selectedLabels)
+# 读取数据库文件
+dataset = utils.audio.Data(args.input_json_file, args.selected_labels)
 result = dataset.load_json(paths=True, labels=True, sex=True, duration=True)
 
 # 确定chunk数量
 maxDuration = max(result.duration)
-windowLength = 1
-nChunk = int(maxDuration/windowLength) + 5
-steps = [(time-windowLength)/(nChunk-1) for time in result.duration]
-nFramePerChunk = int(windowLength/0.020)
-nFramePerStep = [int(step/0.020) for step in steps]
+nChunk = int(maxDuration / args.chunk_length) + 5
+steps = [(time-args.chunk_length) / (nChunk-1) for time in result.duration]
+nFramePerChunk = int(args.chunk_length / 0.020)
+nFramePerStep = [int(step / 0.020) for step in steps]
 print("chunk number: %s" % nChunk)
 print("chunk steps: %s" % steps)
 print("nframe per step: %s" % nFramePerStep)
@@ -33,7 +29,7 @@ print("-------------------------------------------------------------------------
 
 # 提取特征
 result.features = []
-output_dir = os.path.join(savePath, 'lld')
+output_dir = os.path.join(args.output_feature_dir, 'lld')
 utils.base.check_dir(output_dir)
 for i, path in enumerate(result.paths):
     tool = utils.audio.OpenSMILE(path)
@@ -57,5 +53,5 @@ print("-------------------------------------------------------------------------
 print("train_length: %s" % len(x_train))
 print("test_length: %s" % len(x_test))
 print("val_length: %s" % len(x_val))
-utils.tfrecord.generate_tfrecord(((x_train, y_train), (x_test, y_test), (x_val, y_val)), os.path.join(savePath, 'emodb_fixed_chunk'))
+utils.tfrecord.generate_tfrecord(((x_train, y_train), (x_test, y_test), (x_val, y_val)), os.path.join(args.output_feature_dir, 'emodb_fixed_chunk'))
 print("----------------------------------------------------------------------------------\n")
