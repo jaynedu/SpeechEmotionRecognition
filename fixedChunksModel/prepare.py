@@ -16,11 +16,12 @@ dataset = utils.audio.Data(args.input_json_file, args.selected_labels)
 result = dataset.load_json(paths=True, labels=True, sex=True, duration=True)
 
 # 确定chunk数量
+# n * step + (winlen - step) = total time => (n-1) * step + winlen = total time
 maxDuration = max(result.duration)
-nChunk = int(maxDuration / args.chunk_length) + 5
+nChunk = int(maxDuration / args.chunk_length) + 1
 steps = [(time-args.chunk_length) / (nChunk-1) for time in result.duration]
-nFramePerChunk = int(args.chunk_length / 0.020)
-nFramePerStep = [int(step / 0.020) for step in steps]
+nFramePerChunk = int((args.chunk_length-args.window_length) / args.window_step + 1) + 1
+nFramePerStep = [int((step - args.window_length) / args.window_step + 1) + 1 for step in steps]
 print("chunk number: %s" % nChunk)
 print("chunk steps: %s" % steps)
 print("nframe per step: %s" % nFramePerStep)

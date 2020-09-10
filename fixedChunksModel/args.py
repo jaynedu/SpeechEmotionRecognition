@@ -20,6 +20,8 @@ input_json_file = os.path.join(r'E:\Datasets', dataset+'.json')
 output_feature_dir = os.path.join(r'E:\Datasets', dataset)
 selected_labels = [0, 1, 2, 3]
 chunk_length = 1
+window_length = 0.020
+window_step = 0.010
 
 # Model version settings
 model_type = "NonAtten"
@@ -29,16 +31,18 @@ model_save_dir = os.path.join(r'E:\Models', model_name, model_version)
 # Dataset settings
 train_tensorboard_path = os.path.join('logs', datetime + '_' + model_version, 'train')
 val_tensorboard_path = os.path.join('logs', datetime + '_' + model_version, 'val')
-train_path = r'E:\Datasets\iemocap_512_3155.train'
-val_path = r'E:\Datasets\iemocap_512_395.val'
-test_path = r'E:\Datasets\iemocap_512_394.test'
+train_path = r'E:\Datasets\emodb\emodb_fixed_chunk_198.train'
+val_path = r'E:\Datasets\emodb\emodb_fixed_chunk_25.val'
+test_path = r'‪E:\Datasets\emodb\emodb_fixed_chunk_25.test'
 train_size = eval(os.path.splitext(train_path)[0].split('_')[-1])
 val_size = eval(os.path.splitext(val_path)[0].split('_')[-1])
 test_size = eval(os.path.splitext(test_path)[0].split('_')[-1])
 
 # Parameter Settings
 n_label = 4
-raw_feature_shape = [13, 50, 130]
+raw_feature_shape = [9, 100, 130]
+lstm_units = [130, 130]
+output_dense_units = [64, n_label]
 dropout = 0.1
 train_batch = 16
 val_batch = val_size if val_size <= 100 else 100
