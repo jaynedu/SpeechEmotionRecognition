@@ -15,9 +15,12 @@ class Graph:
         self.x_input = tf.placeholder(tf.float32, [None] + args.raw_feature_shape, name='x_input')
         self.y_true = tf.placeholder(tf.int32, [None, ], name='y_true')
         self.lstm_output_keep_prob = tf.placeholder(tf.float32)
-        self.type = None
+        self.type = 'NonAtten'
+        self.training = tf.placeholder(tf.bool, name='training')
 
-    def build(self, training):
+        self.build()
+
+    def build(self):
         nc, cs, nf = args.raw_feature_shape
         # input = [batch, n_chunk, chunk_size, n_feature] -> [batch, time_step, n_feature]
         output = tf.reshape(self.x_input, [-1, cs, nf])
@@ -31,8 +34,7 @@ class Graph:
             output, laststate = tf.nn.dynamic_rnn(lstm, output, dtype=tf.float32)
 
         output = tf.reshape(laststate[-1][-1], [-1, nc, args.lstm_units[-1]])
-        print(output)
-        output = tf.layers.batch_normalization(output, training=training)
+        output = tf.layers.batch_normalization(output, training=self.training)
 
         with tf.name_scope("sentence_representation"):
             if self.type == "NonAtten":
@@ -41,12 +43,12 @@ class Graph:
                 g = tf.layers.dense(output, 130, 'sigmoid')
                 output = tf.reduce_sum(tf.matmul(g, output, transpose_b=True), axis=-1)
             elif self.type == "AttenVec":
-                output, state = tf.keras.layers.SimpleRNN(130, return_state=True, dropout=args.dropout if training else 0)
+                output, state = tf.keras.layers.SimpleRNN(130, return_state=True, dropout=args.dropout if self.training is not None and self.training == True else 0)
                 output = module.attention.time_attention(state, output)
             else:
                 print("Model Type is %s! Available type: NonAtten, GatedVec, AttenVec." % self.type)
                 self.type = input("Input type:")
-                self.build(training)
+                self.build()
 
         with tf.name_scope("output"):
             output = tf.layers.flatten(output)
@@ -56,7 +58,7 @@ class Graph:
             self.logits = output
             self.logits_softmax = tf.nn.softmax(self.logits, name='logits_softmax')
 
-        if training:
+        if self.training is not None and self.training == True:
             module.utils.params_usage(tf.trainable_variables())
 
         y = tf.one_hot(self.y_true, args.n_label)
@@ -78,14 +80,6 @@ class Graph:
         self.merged_summary_op = tf.compat.v1.summary.merge_all()
 
 
-    def __call__(self, type, training=True):
-        self.type = type
-        self.build(training)
-
-
 model = Graph()
-
-if __name__ == '__main__':
-    model(None)
 
 

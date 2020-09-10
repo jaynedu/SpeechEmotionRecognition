@@ -73,22 +73,7 @@ def parse_tfrecord(example_series):
     return feature, label
 
 
-# def read_tfrecord(file, nfeature, seq_length=None, epoch=None, batch_size=None, isTrain=True):
-#     if not isTrain and epoch > 1:
-#         sys.stderr.write('Testing Mode! (epoch should be -1)')
-#         sys.exit(1)
-#     if isinstance(file, list):
-#         example_series = tf.data.TFRecordDataset(file)
-#     else:
-#         example_series = tf.data.TFRecordDataset([file])
-#     epoch_series = example_series.map(parse_tfrecord).repeat(epoch)
-#     epoch_series = epoch_series.shuffle(batch_size * 5)
-#     padded_batch_series = epoch_series.padded_batch(batch_size, ([seq_length, nfeature], [], [], []))
-#     iterator = tf.compat.v1.data.make_initializable_iterator(padded_batch_series)
-#     return iterator
-
-
-def read_tfrecord(file, epoch=None, batch_size=None, isTrain=True):
+def read_tfrecord(file, nfeature, seq_length=None, epoch=None, batch_size=None, isTrain=True):
     if not isTrain and epoch > 1:
         sys.stderr.write('Testing Mode! (epoch should be -1)')
         sys.exit(1)
@@ -98,8 +83,8 @@ def read_tfrecord(file, epoch=None, batch_size=None, isTrain=True):
         example_series = tf.data.TFRecordDataset([file])
     epoch_series = example_series.map(parse_tfrecord).repeat(epoch)
     epoch_series = epoch_series.shuffle(batch_size * 5)
-    batch_series = epoch_series.batch(batch_size)
-    iterator = tf.compat.v1.data.make_initializable_iterator(batch_series)
+    padded_batch_series = epoch_series.padded_batch(batch_size, ([seq_length, nfeature], [], [], []))
+    iterator = tf.compat.v1.data.make_initializable_iterator(padded_batch_series)
     return iterator
 
 
