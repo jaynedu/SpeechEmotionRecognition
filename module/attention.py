@@ -177,8 +177,11 @@ def time_attention(laststate, output, scope='TimeAttention'):
     with tf.variable_scope(scope):
         weights = tf.get_variable('weight', (shape_output[-1], shape_laststate[-1]), tf.float32,
                                   tf.truncated_normal_initializer(stddev=0.1))
+        print('www', weights)
 
     alpha = tf.einsum("aij,jk->aik", output, weights)
+    print('aaa', alpha)
+    print('lll', laststate)
     v = tf.matmul(tf.expand_dims(laststate, 1), alpha, transpose_b=True)
     score = tf.nn.softmax(v, dim=-1)
     return tf.squeeze(tf.matmul(score, output), [1])

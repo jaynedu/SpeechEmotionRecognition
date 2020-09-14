@@ -5,18 +5,7 @@
 # ---- Description ----
 
 
-from utils import tfrecord
-
-
-class GraphBase:
-    def __init__(self):
-        pass
-
-    def build(self):
-        pass
-
-
-class TrainBase:
+class ModelBase:
     def __init__(self):
         pass
 
@@ -26,5 +15,5 @@ class TrainBase:
     def read_tfrecord(self, file, epoch=None, batch_size=None, isTrain=True):
         pass
 
-    def train(self):
+    def setup(self, *args, **kwargs):
         pass

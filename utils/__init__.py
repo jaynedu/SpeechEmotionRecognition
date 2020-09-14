@@ -9,6 +9,5 @@ from utils import base
 from utils import audio
 from utils import draw
 from utils import tfrecord
-from utils.common import GraphBase
-from utils.common import TrainBase
+from utils.common import ModelBase
 from utils.vad import Vad
